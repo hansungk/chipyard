@@ -227,6 +227,7 @@ endif
 $(SYN_CONF): $(VLSI_RTL) $(VLSI_BB)
 	mkdir -p $(dir $@)
 	echo "sim.inputs:" > $@
+	echo "  top_module: $(VLSI_TOP)" >> $@
 	echo "  input_files:" >> $@
 	for x in $(VLSI_RTL); do \
 		echo '    - "'$$x'"' >> $@; \
@@ -238,6 +239,13 @@ $(SYN_CONF): $(VLSI_RTL) $(VLSI_BB)
 	for x in $(VLSI_RTL) $(shell cat $(VLSI_BB)); do \
 		echo '    - "'$$x'"' >> $@; \
 	done
+	echo "power.inputs:" >> $@
+	echo "  top_module: $(VLSI_TOP)" >> $@
+	echo "  input_files:" >> $@
+	for x in $(VLSI_RTL) $(shell cat $(VLSI_BB)); do \
+		echo '    - "'$$x'"' >> $@; \
+	done
+	echo "  level: \"rtl\"" >> $@
 
 #########################################################################################
 # AUTO BUILD FLOW
