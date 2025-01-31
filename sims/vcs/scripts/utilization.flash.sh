@@ -1,0 +1,42 @@
+#!/bin/bash
+
+set -e
+
+echoerr() { echo "$@" 1>&2; }
+
+CURRENT_DIR="${PWD##*/}"
+if [[ "$CURRENT_DIR" != "vcs" ]]; then
+    echoerr "Error: This script must be run from chipyard/sims/vcs."
+    exit 1
+fi
+
+source ./scripts/env.sh > /dev/null
+
+rm -f /tmp/markers.log
+runtime() {
+    log_path="output/chipyard.harness.TestHarness.$1/kernel.radiance.$2.log"
+    check_exists "${log_path}"
+    if [ -z "$(tail -n10 ${log_path} | rg 'finish called')" ]; then
+        echo "$3,0"
+        echoerr "$3 run is not complete"
+        return
+    fi
+    rg "(e0d0a013|be90a013)" ${log_path} > /tmp/markers.log
+    echo -n "$3,"
+    cycles=$(python3 ./scripts/runtime_fast.py /tmp/markers.log)
+    echo "$cycles"
+    util=$(echo "scale=2; 64 * 64 * 64 * 100 / $cycles" | bc)
+    echoerr "$3 cycles: $cycles, hw utilization: ${util}%"
+    rm -f /tmp/markers.log
+}
+
+check_exists() {
+    if ! [ -f "$1" ]; then
+        echoerr "Error: looked for file $1 that does not exist."
+        exit 1
+    fi
+}
+
+echo ",cycles"
+runtime VirgoFlashConfig flash.virgo.seqlen1024.headdim64  "virgo"
+runtime VirgoFlashConfig flash.ampere.seqlen1024.headdim64 "ampere"
